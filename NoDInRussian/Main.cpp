@@ -1,5 +1,6 @@
 #include "Windows.h"
 #include <iostream>
+#include <thread>
 #include "wil/win32_helpers.h"
 
 wil::unique_hhook g_hMouseHook;
@@ -35,9 +36,9 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
             if (wParam == WM_KEYDOWN)
             {
                 if ((keyboardStruct->vkCode == 's' || keyboardStruct->vkCode == 'S') && IsCurrentKeyboardLayoutHebrew()) {
-                    INPUT input = { 0 };
+                    INPUT input{};
                     input.type = INPUT_KEYBOARD;
-                    input.ki.wVk = (keyboardStruct->vkCode == 's') ? 'z' : 'Z';
+                    input.ki.wVk = 'Z';
                     SendInput(1, &input, sizeof(INPUT));
                     return 1;
                 }
@@ -47,12 +48,11 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
     return CallNextHookEx(g_hMouseHook.get(), nCode, wParam, lParam);
 }
 
-DWORD WINAPI MyMouseLogger(LPVOID lpParm)
+DWORD WINAPI MyKeboardLogger(LPVOID)
 {
     g_hMouseHook = wil::unique_hhook(SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, GetModuleHandle(NULL), 0));
     if (!g_hMouseHook) {
-        auto err = GetLastError();
-        std::cout << "Failed setting Windows hook. Error: %u" << err << std::endl;
+        std::cout << "Failed setting Windows hook. Error: %u" << GetLastError() << std::endl;
     }
 
     MSG Msg;
@@ -67,20 +67,7 @@ DWORD WINAPI MyMouseLogger(LPVOID lpParm)
 }
 
 int main(int argc, char *argv[]) {
-    DWORD dwThread;
-    wil::unique_handle hThread(CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)MyMouseLogger, (LPVOID)argv[0], NULL, &dwThread));
-    if (hThread) {
-        const auto waitRes = WaitForSingleObject(hThread.get(), INFINITE);
-        if (waitRes == WAIT_OBJECT_0) {
-            // signalned
-            std::cout << "signaled" << std::endl;
-        } else if (waitRes == WAIT_FAILED) {
-            std::cout << "wait failed: " << GetLastError() << std::endl;
-        } else {
-            std::cout << "other: waitRes " << waitRes << ". Error: " << GetLastError() << std::endl;
-        }
-    } else {
-        std::cout << "Failed to create thread: " << GetLastError() << std::endl;
-    }
+    std::thread thread(MyKeboardLogger, argv[0]);
+    thread.join();
     return 1;
 }
