@@ -67,12 +67,9 @@ DWORD WINAPI MyMouseLogger(LPVOID lpParm)
 }
 
 int main(int argc, char *argv[]) {
-    std::cout << "Main Start" << std::endl;
     DWORD dwThread;
-
     wil::unique_handle hThread(CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)MyMouseLogger, (LPVOID)argv[0], NULL, &dwThread));
     if (hThread) {
-        std::cout << "Waiting for thread"<< std::endl;
         const auto waitRes = WaitForSingleObject(hThread.get(), INFINITE);
         if (waitRes == WAIT_OBJECT_0) {
             // signalned
