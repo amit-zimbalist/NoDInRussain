@@ -23,7 +23,7 @@ bool IsCurrentKeyboardLayoutHebrew()
     // Extract the language identifier (LANGID) from HKL
     LANGID langId = LOWORD(hkl);
 
-    // Check if the language is Hebrew
+    // Check if the language is Hebrew TODO(amitzi): make tkhis configurable
     return PRIMARYLANGID(langId) == LANG_HEBREW;
 }
 
